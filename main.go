@@ -5,7 +5,8 @@ import (
 	"sync"
 )
 
-// TODO - can we define an interface for Using/UsingVoid? CAn this interface "extend" Locker (i.e. require that an implementing type also implement Locker?)
+// Having an interface for UseWithLock that embeds sync.Locker and some sort of Use() function isn't really worthwhile;
+// having these standalone functions are probably the most useful thing
 
 func Using[L sync.Locker, T any](locker L, callback func() T) T {
 	locker.Lock()
@@ -19,7 +20,7 @@ func UsingVoid[L sync.Locker](locker L, callback func()) {
 	callback()
 }
 
-// implements Locker
+// implements sync.Locker
 // realistically, rather than implementing Locker, you'd probably want to expose public methods that manage the mutex
 type SharedCounter struct {
 	mu    sync.Mutex
