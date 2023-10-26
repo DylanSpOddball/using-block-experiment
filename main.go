@@ -62,4 +62,42 @@ func main() {
 	UsingVoid(sc, func() {
 		sc.Value += 1
 	})
+
+	NUM_GOROUTINES := 1000
+
+	singleGoroutineCounter := 0
+	for i := 0; i < NUM_GOROUTINES; i++ {
+		singleGoroutineCounter += i
+	}
+	fmt.Printf("Expected sum result: %v\n", singleGoroutineCounter)
+
+	unprotectedDone := make(chan struct{}, NUM_GOROUTINES)
+	unprotectedCounter := 0 // not protected by mutex; race condition expected
+	for i := 0; i < NUM_GOROUTINES; i++ {
+		i := i // avoid loop variable capture
+		go func() {
+			unprotectedCounter += i
+			unprotectedDone <- struct{}{}
+		}()
+	}
+	for i := 0; i < NUM_GOROUTINES; i++ {
+		<-unprotectedDone
+	}
+	fmt.Printf("Unprotected counter value: %v\n", unprotectedCounter)
+
+	protectedDone := make(chan struct{}, NUM_GOROUTINES)
+	protectedCounter := 0
+	for i := 0; i < NUM_GOROUTINES; i++ {
+		i := i // avoid loop variable capture
+		go func() {
+			UsingVoid(&mutex1, func() {
+				protectedCounter += i
+			})
+			protectedDone <- struct{}{}
+		}()
+	}
+	for i := 0; i < NUM_GOROUTINES; i++ {
+		<-protectedDone
+	}
+	fmt.Printf("Protected counter value: %v\n", protectedCounter)
 }
